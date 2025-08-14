@@ -23,12 +23,14 @@ By default, the server runs on http://localhost:3000.
 ## API Usage
 ### Spin the Slot Machine
 
-Endpoint:
+Endpoints:
 ```
 GET /api/slot
+GET /api/slot/simulation/:totalSpins
 ```
 
 ## Example:
 ```
 curl http://localhost:3000/api/slot
+curl http://localhost:3000/api/slot/simulation/30
 ```
