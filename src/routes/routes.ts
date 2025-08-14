@@ -10,3 +10,13 @@ router.get('/', (req: Request, res: Response) => {
     console.log(result);
     res.json(result);
 });
+router.get('/simulation/:totalSpins', (req: Request, res: Response) => {
+    const { totalSpins } = req.params;
+    const result: object[] = [];
+    for (let i = 0; i < Number(totalSpins); i++) {
+        const slot = new Slot(config);
+        result.push(slot.spin());
+        console.log(result);
+    }
+    res.json(result);
+});
