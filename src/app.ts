@@ -5,6 +5,9 @@ const app = express();
 
 const slot = new Slot();
 
+slot.spin();
+
+
 app.listen(() => {
     console.log(`Server running on port ${3000}`);
 });
