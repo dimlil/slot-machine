@@ -1,13 +1,10 @@
 import express from 'express';
-import Slot from './controller/slot.js';
+import { router } from './routes/routes.js';
 
 const app = express();
+// Routes
+app.use('/api/slot', router);
 
-const slot = new Slot();
-
-slot.spin();
-
-
-app.listen(() => {
-    console.log(`Server running on port ${3000}`);
+app.listen(3000, () => {
+    console.log(`Server running on port 3000`);
 });
