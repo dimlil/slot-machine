@@ -1,22 +1,55 @@
-import config from '../config/config.js';
+interface PayTable {
+    [symbol: number]: number[];
+}
+interface Config {
+    reelsCount: number;
+    rowsCount: number;
+    reels: number[][];
+    lines: number[][];
+    symbols: PayTable;
+}
+
+interface LineWin {
+    lineIndex: number;
+    symbol: number;
+    count: number;
+    win: number;
+}
+
+interface SpinResult {
+    stops: number[];
+    screen: number[][];
+    lineWins: LineWin[];
+    totalWin: number;
+}
 
 export default class Slot {
 
-    constructor() { }
+    constructor(private config: Config) { }
 
     private getRandomReelIndex(max: number): number {
         return Math.floor(Math.random() * max);
     }
 
+    private getStops(): number[] {
+        const stops: number[] = [];
+
+        for (let i = 0; i < this.config.reelsCount; i++) {
+            stops.push(this.getRandomReelIndex(this.config.reels[i].length));
+        }
+
+        return stops;
+    }
+
     private getRandomSymbol(stops: number[]): number[][] {
-        const screen: number[][] = Array.from({ length: config.rowsCount }, () =>
-            Array(config.reelsCount).fill(0)
+        const screen: number[][] = Array.from({ length: this.config.rowsCount }, () =>
+            Array(this.config.reelsCount).fill(0)
         );
-        for (let i = 0; i < config.reelsCount; i++) {
-            for (let j = 0; j < config.rowsCount; j++) {
+        for (let i = 0; i < this.config.reelsCount; i++) {
+            for (let j = 0; j < this.config.rowsCount; j++) {
                 const reelIndex: number = stops[i];
-                const symbolIndex: number = (reelIndex + j) % config.reels[i].length;
-                screen[j][i] = config.reels[i][symbolIndex];
+                const symbolIndex: number = (reelIndex + j) % this.config.reels[i].length;
+                screen[j][i] = this.config.reels[i][symbolIndex];
             }
         }
         return screen;
@@ -29,55 +62,48 @@ export default class Slot {
         }
     }
 
-    private checkWin(screen: number[][]): number {
+    private checkWin(screen: number[][]): { lineWins: LineWin[]; totalWin: number } {
+        const lineWins: LineWin[] = [];
         let totalWin = 0;
 
-        for (let li = 0; li < config.lines.length; li++) {
-            const line = config.lines[li];
-
-            const seq: number[] = line.map((rowIdx, reelIdx) => screen[rowIdx][reelIdx]);
-
-            const first = seq[0];
+        this.config.lines.forEach((line, lineIndex) => {
+            const firstSymbol = screen[line[0]][0];
             let matchCount = 1;
 
-            for (let r = 1; r < seq.length; r++) {
-                if (seq[r] === first) matchCount++;
-                else {
+            for (let reel = 1; reel < this.config.reelsCount; reel++) {
+                const symbol = screen[line[reel]][reel];
+                if (symbol === firstSymbol) {
+                    matchCount++;
+                } else {
                     break;
                 }
             }
 
-            const payTable = config.symbols[first as keyof typeof config.symbols] ?? [];
-            const winAmount = payTable[matchCount - 1] ?? 0;
-
-            if (winAmount > 0) {
+            if (matchCount >= 3) {
+                const winAmount = this.config.symbols[firstSymbol as keyof typeof this.config.symbols][matchCount - 1];
+                lineWins.push({
+                    lineIndex,
+                    symbol: firstSymbol,
+                    count: matchCount,
+                    win: winAmount
+                });
                 totalWin += winAmount;
-                console.log(`Line ${li + 1} win: ${winAmount} (match count: ${matchCount})`);
             }
-        }
+        });
 
-        if (totalWin > 0) {
-            console.log(`Total win: ${totalWin}`);
-        } else {
-            console.log('No win this spin.');
-        }
-
-        return totalWin;
+        return { lineWins, totalWin };
     }
 
-
-    public spin(): void {
-        const stops: number[] = [];
-
-        for (let i = 0; i < config.reelsCount; i++) {
-            const reelIndex: number = this.getRandomReelIndex(config.reels[i].length);
-            stops.push(reelIndex);
-        }
-
-        const screen: number[][] = this.getRandomSymbol(stops);
-
+    public spin(): SpinResult {
+        const stops = this.getStops();
+        const screen = this.getRandomSymbol(stops);
         this.showScreen(screen);
-
-        this.checkWin(screen);
+        const { totalWin, lineWins } = this.checkWin(screen);
+        return {
+            stops,
+            screen,
+            lineWins,
+            totalWin
+        };
     }
 }
